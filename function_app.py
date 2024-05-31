@@ -16,6 +16,7 @@ load_dotenv(find_dotenv())
 
 URL = os.environ.get("URL")
 CSV_FILE = "prev_product_list.csv"
+logging.basicConfig(level=logging.INFO)
 
 
 @app.schedule(
@@ -33,7 +34,7 @@ def func_scraper_timer_trigger(myTimer: func.TimerRequest) -> None:
     try:
         main()
     except Exception as e:
-        logging.error(f"An error occurred while running the scraper: {e}")
+        logging.error("An error occurred while running the scraper: %s", e)
 
 
 def load_prev_list():
@@ -86,26 +87,20 @@ def send_email(list):
     html_content = generate_email_content(list)
 
     try:
-        server = smtplib.SMTP_SSL("smtp.googlemail.com", 465)
-        server.login(sender_email, sender_password)
-    except Exception as error:
-        logging.error("Something went wrong: ", error)
+        with smtplib.SMTP_SSL("smtp.googlemail.com", 465) as server:
+            server.login(sender_email, sender_password)
+            for receiver_email in receiver_emails:
+                msg = MIMEMultipart("alternative")
+                msg["Subject"] = "New items in stock"
+                msg["From"] = formataddr(("Luxury Web Scraper", sender_email))
+                msg["To"] = receiver_email
 
-    try:
-        for receiver_email in receiver_emails:
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = "New items in stock"
-            msg["From"] = formataddr(("Luxury Web Scraper", sender_email))
-            msg["To"] = receiver_email
-
-            msg.attach(MIMEText(html_content, "html"))
-            server.sendmail(sender_email, receiver_email, msg.as_string())
+                msg.attach(MIMEText(html_content, "html"))
+                server.sendmail(sender_email, receiver_email, msg.as_string())
 
         logging.info("Email sent successfully.")
     except Exception as error:
-        logging.error("Failed to send email: ", error)
-    finally:
-        server.quit()
+        logging.error("Failed to send email: %s", error)
 
 
 def request_content(url):
@@ -158,7 +153,7 @@ def scrape_and_compare(prev_list):
             logging.info("Nothing new.")
 
     except Exception as error:
-        logging.error("An error occurred: ", error)
+        logging.error("An error occurred: %s", error)
 
 
 def main():
