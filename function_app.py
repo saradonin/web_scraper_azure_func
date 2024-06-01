@@ -148,7 +148,7 @@ def extract_product_info(content):
         name_href = name_a.get("href", "N/A") if name_a else "N/A"
         price_1_text = price_1.get_text(strip=True) if price_1 else "N/A"
         price_2_text = price_2.get_text(strip=True) if price_2 else "N/A"
-        price_text = (price_1_text + price_2_text).replace(',', '.')
+        price_text = (price_1_text + price_2_text).replace(",", ".")
 
         product = {"name": name_title, "price": price_text, "link": name_href}
         product_list.append(product)
@@ -158,6 +158,14 @@ def extract_product_info(content):
 
 def dicts_equal(dict1, dict2):
     return all(dict1[key] == dict2[key] for key in dict1)
+
+
+def filter_new_products(products_unfiltered, exclude_words):
+    filtered_products = []
+    for product in products_unfiltered:
+        if not any(word in product["name"].lower() for word in exclude_words):
+            filtered_products.append(product)
+    return filtered_products
 
 
 def scrape_and_compare(prev_list):
@@ -172,13 +180,13 @@ def scrape_and_compare(prev_list):
 
         logging.info("Scraped successfully!")
 
-        exclude_words = ["alhambra", "armaf", "lattafa", "paris corner", "zimaya"]
-        new_products = [
+        new_products_unfiltered = [
             item
             for item in combined_product_list
             if not any(dicts_equal(item, prev_item) for prev_item in prev_list)
-            and not any(word in item["name"].lower() for word in exclude_words)
         ]
+        exclude_words = os.environ.get("EXCLUDE_LIST").split(",")
+        new_products = filter_new_products(new_products_unfiltered, exclude_words)
 
         if new_products:
             send_email(new_products)
@@ -194,6 +202,7 @@ def scrape_and_compare(prev_list):
 def main():
     prev_list = load_prev_list()
     scrape_and_compare(prev_list)
+
 
 test_list = load_prev_list()
 new = scrape_and_compare(test_list)
