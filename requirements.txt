@@ -2,7 +2,9 @@
 # The Python Worker is managed by Azure Functions platform
 # Manually managing azure-functions-worker may cause unexpected issues
 
+azure-core
 azure-functions
+azure-storage-blob
 beautifulsoup4
 certifi
 charset-normalizer

@@ -5,6 +5,7 @@ import csv
 import smtplib
 from dotenv import load_dotenv, find_dotenv
 from bs4 import BeautifulSoup
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 import azure.functions as func
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -14,9 +15,17 @@ app = func.FunctionApp()
 
 load_dotenv(find_dotenv())
 
+# load .env data
 URL = os.environ.get("URL")
-CSV_FILE = "prev_product_list.csv"
+AZURE_STORAGE_CONNECTION_STRING = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
+BLOB_CONTAINER_NAME = os.environ.get("BLOB_CONTAINER_NAME")
+CSV_BLOB_NAME = os.environ.get("CSV_BLOB_NAME")
+
 logging.basicConfig(level=logging.INFO)
+blob_service_client = BlobServiceClient.from_connection_string(
+    AZURE_STORAGE_CONNECTION_STRING
+)
+container_client = blob_service_client.get_container_client(BLOB_CONTAINER_NAME)
 
 
 @app.schedule(
@@ -38,18 +47,26 @@ def func_scraper_timer_trigger(myTimer: func.TimerRequest) -> None:
 
 
 def load_prev_list():
-    if os.path.exists(CSV_FILE):
-        with open(CSV_FILE, mode="r", newline="", encoding="utf-8") as file:
-            reader = csv.DictReader(file)
-            return [row for row in reader]
-    return []
+    try:
+        blob_client = container_client.get_blob_client(CSV_BLOB_NAME)
+        blob_data = blob_client.download_blob().readall()
+        csv_data = blob_data.decode("utf-8").splitlines()
+        reader = csv.DictReader(csv_data)
+        return [row for row in reader]
+    except Exception as e:
+        logging.error(f"Failed to load previous list: %s", e)
+        return []
 
 
 def save_list_to_csv(product_list):
-    with open(CSV_FILE, mode="w", newline="", encoding="utf-8") as file:
-        writer = csv.DictWriter(file, fieldnames=["name", "price", "link"])
-        writer.writeheader()
-        writer.writerows(product_list)
+    try:
+        blob_client = container_client.get_blob_client(CSV_BLOB_NAME)
+        csv_data = "name,price,link\n"
+        for product in product_list:
+            csv_data += f"{product['name']},{product['price']},{product['link']}\n"
+        blob_client.upload_blob(csv_data, overwrite=True)
+    except Exception as e:
+        logging.error(f"Failed to save list to CSV: %s", e)
 
 
 def generate_email_content(items):
@@ -141,16 +158,17 @@ def extract_product_info(content):
 
 def scrape_and_compare(prev_list):
     try:
-        url_list = generate_url_list(URL,8)
+        url_list = generate_url_list(URL, 8)
         combined_product_list = []
+
         for url in url_list:
             content = request_content(url)
             product_list = extract_product_info(content)
             combined_product_list.extend(product_list)
-        
+
         logging.info("Scraped successfully!")
 
-        exclude_words = ["alhambra", "armaf", "paris corner", "zimaya"]
+        exclude_words = ["alhambra", "armaf", "lattafa", "paris corner", "zimaya"]
         new_products = [
             item
             for item in combined_product_list
@@ -171,4 +189,3 @@ def scrape_and_compare(prev_list):
 def main():
     prev_list = load_prev_list()
     scrape_and_compare(prev_list)
-
