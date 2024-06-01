@@ -148,12 +148,16 @@ def extract_product_info(content):
         name_href = name_a.get("href", "N/A") if name_a else "N/A"
         price_1_text = price_1.get_text(strip=True) if price_1 else "N/A"
         price_2_text = price_2.get_text(strip=True) if price_2 else "N/A"
-        price_text = price_1_text + price_2_text
+        price_text = (price_1_text + price_2_text).replace(',', '.')
 
         product = {"name": name_title, "price": price_text, "link": name_href}
         product_list.append(product)
 
     return product_list
+
+
+def dicts_equal(dict1, dict2):
+    return all(dict1[key] == dict2[key] for key in dict1)
 
 
 def scrape_and_compare(prev_list):
@@ -172,13 +176,14 @@ def scrape_and_compare(prev_list):
         new_products = [
             item
             for item in combined_product_list
-            if item not in prev_list
+            if not any(dicts_equal(item, prev_item) for prev_item in prev_list)
             and not any(word in item["name"].lower() for word in exclude_words)
         ]
 
         if new_products:
             send_email(new_products)
             save_list_to_csv(combined_product_list)
+            return new_products
         else:
             logging.info("Nothing new.")
 
@@ -189,3 +194,8 @@ def scrape_and_compare(prev_list):
 def main():
     prev_list = load_prev_list()
     scrape_and_compare(prev_list)
+
+test_list = load_prev_list()
+new = scrape_and_compare(test_list)
+print(test_list[0])
+print(new[0])
