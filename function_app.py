@@ -103,6 +103,13 @@ def send_email(list):
         logging.error("Failed to send email: %s", error)
 
 
+def generate_url_list(base_url, url_range):
+    url_list = [base_url]
+    for i in range(1, url_range + 1):
+        url_list.append(f"{base_url},{i}.html")
+    return url_list
+
+
 def request_content(url):
     r = requests.get(url)
     soup = BeautifulSoup(r.content, "html.parser")
@@ -134,21 +141,26 @@ def extract_product_info(content):
 
 def scrape_and_compare(prev_list):
     try:
-        content = request_content(URL)
-        product_list = extract_product_info(content)
+        url_list = generate_url_list(URL,8)
+        combined_product_list = []
+        for url in url_list:
+            content = request_content(url)
+            product_list = extract_product_info(content)
+            combined_product_list.extend(product_list)
+        
         logging.info("Scraped successfully!")
 
         exclude_words = ["alhambra", "armaf", "paris corner", "zimaya"]
         new_products = [
             item
-            for item in product_list
+            for item in combined_product_list
             if item not in prev_list
             and not any(word in item["name"].lower() for word in exclude_words)
         ]
 
         if new_products:
             send_email(new_products)
-            save_list_to_csv(product_list)
+            save_list_to_csv(combined_product_list)
         else:
             logging.info("Nothing new.")
 
@@ -159,3 +171,4 @@ def scrape_and_compare(prev_list):
 def main():
     prev_list = load_prev_list()
     scrape_and_compare(prev_list)
+
