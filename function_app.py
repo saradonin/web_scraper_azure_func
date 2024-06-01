@@ -1,31 +1,19 @@
 import logging
 import os
 import requests
-import csv
-import smtplib
 from dotenv import load_dotenv, find_dotenv
 from bs4 import BeautifulSoup
-from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+
 import azure.functions as func
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.utils import formataddr
+from email_utils import send_email
+from csv_utils import load_prev_list, save_list_to_csv
+
 
 app = func.FunctionApp()
-
 load_dotenv(find_dotenv())
-
-# load .env data
-URL = os.environ.get("URL")
-AZURE_STORAGE_CONNECTION_STRING = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
-BLOB_CONTAINER_NAME = os.environ.get("BLOB_CONTAINER_NAME")
-CSV_BLOB_NAME = os.environ.get("CSV_BLOB_NAME")
-
 logging.basicConfig(level=logging.INFO)
-blob_service_client = BlobServiceClient.from_connection_string(
-    AZURE_STORAGE_CONNECTION_STRING
-)
-container_client = blob_service_client.get_container_client(BLOB_CONTAINER_NAME)
+
+URL = os.environ.get("URL")
 
 
 @app.schedule(
@@ -44,80 +32,6 @@ def func_scraper_timer_trigger(myTimer: func.TimerRequest) -> None:
         main()
     except Exception as e:
         logging.error("An error occurred while running the scraper: %s", e)
-
-
-def load_prev_list():
-    try:
-        blob_client = container_client.get_blob_client(CSV_BLOB_NAME)
-        blob_data = blob_client.download_blob().readall()
-        csv_data = blob_data.decode("utf-8").splitlines()
-        reader = csv.DictReader(csv_data)
-        return [row for row in reader]
-    except Exception as e:
-        logging.error(f"Failed to load previous list: %s", e)
-        return []
-
-
-def save_list_to_csv(product_list):
-    try:
-        blob_client = container_client.get_blob_client(CSV_BLOB_NAME)
-        csv_data = "name,price,link\n"
-        for product in product_list:
-            csv_data += f"{product['name']},{product['price']},{product['link']}\n"
-        blob_client.upload_blob(csv_data, overwrite=True)
-    except Exception as e:
-        logging.error(f"Failed to save list to CSV: %s", e)
-
-
-def generate_email_content(items):
-
-    list_items_html = "".join(
-        f'<li>{item["name"]} - {item["price"]} - <a href="{item["link"]}">LINK</a></li>'
-        for item in items
-    )
-
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-        <head>
-            <title>New items in stock!</title>
-        </head>
-        <body>
-            <h1>New items available:</h1>
-            <ul>
-                {list_items_html}
-            </ul>
-            <br>
-            <p>Email sent from Web Scraper App by saradonin</p>
-        </body>
-    </html>
-    """
-    return html_content
-
-
-def send_email(list):
-
-    sender_email = os.environ.get("EMAIL_LOGIN")
-    sender_password = os.environ.get("EMAIL_PASSWORD")
-    receiver_emails = os.environ.get("EMAIL_RECIPENTS").split(",")
-
-    html_content = generate_email_content(list)
-
-    try:
-        with smtplib.SMTP_SSL("smtp.googlemail.com", 465) as server:
-            server.login(sender_email, sender_password)
-            for receiver_email in receiver_emails:
-                msg = MIMEMultipart("alternative")
-                msg["Subject"] = "New items in stock"
-                msg["From"] = formataddr(("Luxury Web Scraper", sender_email))
-                msg["To"] = receiver_email
-
-                msg.attach(MIMEText(html_content, "html"))
-                server.sendmail(sender_email, receiver_email, msg.as_string())
-
-        logging.info("Email sent successfully.")
-    except Exception as error:
-        logging.error("Failed to send email: %s", error)
 
 
 def generate_url_list(base_url, url_range):
@@ -206,5 +120,7 @@ def main():
 
 test_list = load_prev_list()
 new = scrape_and_compare(test_list)
+# print(test_list)
+# print(new)
 print(test_list[0])
 print(new[0])
