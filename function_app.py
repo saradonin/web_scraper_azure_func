@@ -17,7 +17,7 @@ URL = os.environ.get("URL")
 
 
 @app.schedule(
-    schedule="0 */30 * * * *",
+    schedule="0 */45 * * * *",
     arg_name="myTimer",
     run_on_startup=True,
     use_monitor=False,
@@ -58,7 +58,7 @@ def extract_product_info(content):
         price_1 = item.find("span", class_="price_1")
         price_2 = item.find("span", class_="price_2")
 
-        name_title = name_a.get("title", "N/A").strip() if name_a else "N/A"
+        name_title = name_a.get("title", "N/A").strip().replace(",", " ") if name_a else "N/A"
         name_href = name_a.get("href", "N/A") if name_a else "N/A"
         price_1_text = price_1.get_text(strip=True) if price_1 else "N/A"
         price_2_text = price_2.get_text(strip=True) if price_2 else "N/A"
@@ -116,11 +116,3 @@ def scrape_and_compare(prev_list):
 def main():
     prev_list = load_prev_list()
     scrape_and_compare(prev_list)
-
-
-test_list = load_prev_list()
-new = scrape_and_compare(test_list)
-# print(test_list)
-# print(new)
-print(test_list[0])
-print(new[0])
