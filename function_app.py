@@ -8,7 +8,7 @@ import azure.functions as func
 from email_utils import send_email
 from csv_utils import load_prev_list, save_list_to_csv
 from misc_utils import (
-    dicts_equal,
+    filter_new_products,
     filter_unwanted_products,
     filter_wanted_products,
     generate_url_list,
@@ -100,24 +100,21 @@ def scrape_and_compare(prev_list):
 
         logging.info("Scraped successfully!")
 
-        new_products_unfiltered = [
-            item
-            for item in combined_product_list
-            if not any(dicts_equal(item, prev_item) for prev_item in prev_list)
-        ]
+        new_products = filter_new_products(combined_product_list, prev_list)
+        new_products_filtered = filter_unwanted_products(new_products, EXCLUDE_LIST)
 
-        new_products = filter_unwanted_products(new_products_unfiltered, EXCLUDE_LIST)
-
-        if new_products:
-            send_email(EMAIL_RECIPENTS_GENERAL, new_products)
+        if new_products_filtered:
+            send_email(EMAIL_RECIPENTS_GENERAL, new_products_filtered)
             save_list_to_csv(combined_product_list)
 
-            wishlist_products = filter_wanted_products(new_products, INCLUDE_LIST)
+            wishlist_products = filter_wanted_products(
+                new_products_filtered, INCLUDE_LIST
+            )
 
             if wishlist_products:
                 send_email(EMAIL_RECIPENTS_WISHLIST, wishlist_products)
 
-            return new_products
+            return new_products_filtered
         else:
             logging.info("Nothing new.")
 
