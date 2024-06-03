@@ -6,15 +6,19 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
 
+
 load_dotenv(find_dotenv())
 logging.basicConfig(level=logging.INFO)
 
+# load environment variables
 SENDER_EMAIL = os.environ.get("EMAIL_LOGIN")
-SENDER_PASWORD = os.environ.get("EMAIL_PASSWORD")
+SENDER_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 
 
 def generate_email_content(items):
-
+    """
+    Generate HTML content for the email.
+    """
     list_items_html = "".join(
         f'<li>{item["name"]} - {item["price"]} - <a href="{item["link"]}">LINK</a></li>'
         for item in items
@@ -40,12 +44,14 @@ def generate_email_content(items):
 
 
 def send_email(receiver_emails, list):
-
+    """
+    Send an email with the list of items to the specified receivers.
+    """
     html_content = generate_email_content(list)
 
     try:
         with smtplib.SMTP_SSL("smtp.googlemail.com", 465) as server:
-            server.login(SENDER_EMAIL, SENDER_PASWORD)
+            server.login(SENDER_EMAIL, SENDER_PASSWORD)
             for receiver_email in receiver_emails:
                 msg = MIMEMultipart("alternative")
                 msg["Subject"] = "New items in stock"

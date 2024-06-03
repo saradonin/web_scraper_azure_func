@@ -2,12 +2,13 @@ import os
 import csv
 import logging
 from dotenv import load_dotenv, find_dotenv
-from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+from azure.storage.blob import BlobServiceClient, ContainerClient
 
 
 load_dotenv(find_dotenv())
 logging.basicConfig(level=logging.INFO)
 
+# load environment variables
 AZURE_STORAGE_CONNECTION_STRING = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
 BLOB_CONTAINER_NAME = os.environ.get("BLOB_CONTAINER_NAME")
 CSV_BLOB_NAME = os.environ.get("CSV_BLOB_NAME")
@@ -18,6 +19,9 @@ container_client = blob_service_client.get_container_client(BLOB_CONTAINER_NAME)
 
 
 def load_prev_list():
+    """
+    Load the previous list from the CSV blob in Azure Storage.
+    """
     try:
         blob_client = container_client.get_blob_client(CSV_BLOB_NAME)
         blob_data = blob_client.download_blob().readall()
@@ -30,6 +34,9 @@ def load_prev_list():
 
 
 def save_list_to_csv(product_list):
+    """
+    Save the product list to a CSV blob in Azure Storage.
+    """
     try:
         blob_client = container_client.get_blob_client(CSV_BLOB_NAME)
         csv_data = "name,price,link\n"

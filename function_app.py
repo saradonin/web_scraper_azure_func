@@ -19,6 +19,7 @@ app = func.FunctionApp()
 load_dotenv(find_dotenv())
 logging.basicConfig(level=logging.INFO)
 
+# load environment variables
 URL = os.environ.get("URL")
 EMAIL_RECIPENTS_GENERAL = os.environ.get("EMAIL_RECIPENTS_GENERAL").split(",")
 EMAIL_RECIPENTS_WISHLIST = os.environ.get("EMAIL_RECIPENTS_WISHLIST").split(",")
@@ -33,6 +34,9 @@ INCLUDE_LIST = os.environ.get("INCLUDE_LIST").split(",")
     use_monitor=False,
 )
 def func_scraper_timer_trigger(myTimer: func.TimerRequest) -> None:
+    """
+    Azure Function that triggers on a schedule to scrape and process data.
+    """
     if myTimer.past_due:
         logging.info("The timer is past due!")
 
@@ -45,12 +49,18 @@ def func_scraper_timer_trigger(myTimer: func.TimerRequest) -> None:
 
 
 def request_content(url):
+    """
+    Request and parse the content of the given URL using BeautifulSoup.
+    """
     r = requests.get(url)
     soup = BeautifulSoup(r.content, "html.parser")
     return soup
 
 
 def extract_product_info(content):
+    """
+    Extract product information from the parsed HTML content.
+    """
     s = content.find("div", class_="listning-boxes container-fluid")
     products = s.find_all("div", class_="product-info row")
     product_list = []
@@ -76,6 +86,9 @@ def extract_product_info(content):
 
 
 def scrape_and_compare(prev_list):
+    """
+    Scrape the website and compare the results with the previous list.
+    """
     try:
         url_list = generate_url_list(URL, 8)
         combined_product_list = []
@@ -113,5 +126,8 @@ def scrape_and_compare(prev_list):
 
 
 def main():
+    """
+    Main function to load the previous list and initiate scraping and comparison.
+    """
     prev_list = load_prev_list()
     scrape_and_compare(prev_list)
