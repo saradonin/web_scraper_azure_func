@@ -7,6 +7,8 @@ This project is an Azure Function App designed to scrape product information fro
 - Scrapes product information from multiple URLs.
 - Compares the scraped data with previously stored data.
 - Sends email notifications for new products.
+- Compares the scraped data with wishlist.
+- Sends email notifications for products from wishlist.
 - Stores and retrieves data from Azure Blob Storage.
 
 ## Prerequisites
