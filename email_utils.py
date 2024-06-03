@@ -9,6 +9,9 @@ from email.utils import formataddr
 load_dotenv(find_dotenv())
 logging.basicConfig(level=logging.INFO)
 
+SENDER_EMAIL = os.environ.get("EMAIL_LOGIN")
+SENDER_PASWORD = os.environ.get("EMAIL_PASSWORD")
+
 
 def generate_email_content(items):
 
@@ -38,22 +41,19 @@ def generate_email_content(items):
 
 def send_email(receiver_emails, list):
 
-    sender_email = os.environ.get("EMAIL_LOGIN")
-    sender_password = os.environ.get("EMAIL_PASSWORD")
-
     html_content = generate_email_content(list)
 
     try:
         with smtplib.SMTP_SSL("smtp.googlemail.com", 465) as server:
-            server.login(sender_email, sender_password)
+            server.login(SENDER_EMAIL, SENDER_PASWORD)
             for receiver_email in receiver_emails:
                 msg = MIMEMultipart("alternative")
                 msg["Subject"] = "New items in stock"
-                msg["From"] = formataddr(("Luxury Web Scraper", sender_email))
+                msg["From"] = formataddr(("Luxury Web Scraper", SENDER_EMAIL))
                 msg["To"] = receiver_email
 
                 msg.attach(MIMEText(html_content, "html"))
-                server.sendmail(sender_email, receiver_email, msg.as_string())
+                server.sendmail(SENDER_EMAIL, receiver_email, msg.as_string())
 
         logging.info("Email sent successfully.")
     except Exception as error:

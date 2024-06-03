@@ -7,7 +7,12 @@ from bs4 import BeautifulSoup
 import azure.functions as func
 from email_utils import send_email
 from csv_utils import load_prev_list, save_list_to_csv
-from misc_utils import dicts_equal, filter_unwanted_products, filter_wanted_products, generate_url_list
+from misc_utils import (
+    dicts_equal,
+    filter_unwanted_products,
+    filter_wanted_products,
+    generate_url_list,
+)
 
 
 app = func.FunctionApp()
@@ -15,8 +20,10 @@ load_dotenv(find_dotenv())
 logging.basicConfig(level=logging.INFO)
 
 URL = os.environ.get("URL")
-receiver_emails = os.environ.get("EMAIL_RECIPENTS_GENERAL").split(",")
-wishlist_emails = os.environ.get("EMAIL_RECIPENTS_WISHLIST").split(",")
+EMAIL_RECIPENTS_GENERAL = os.environ.get("EMAIL_RECIPENTS_GENERAL").split(",")
+EMAIL_RECIPENTS_WISHLIST = os.environ.get("EMAIL_RECIPENTS_WISHLIST").split(",")
+EXCLUDE_LIST = os.environ.get("EXCLUDE_LIST").split(",")
+INCLUDE_LIST = os.environ.get("INCLUDE_LIST").split(",")
 
 
 @app.schedule(
@@ -85,18 +92,17 @@ def scrape_and_compare(prev_list):
             for item in combined_product_list
             if not any(dicts_equal(item, prev_item) for prev_item in prev_list)
         ]
-        exclude_words = os.environ.get("EXCLUDE_LIST").split(",")
-        new_products = filter_unwanted_products(new_products_unfiltered, exclude_words)
+
+        new_products = filter_unwanted_products(new_products_unfiltered, EXCLUDE_LIST)
 
         if new_products:
-            send_email(receiver_emails, new_products)
+            send_email(EMAIL_RECIPENTS_GENERAL, new_products)
             save_list_to_csv(combined_product_list)
 
-            include_words = os.environ.get("INCLUDE_LIST").split(",")
-            wishlist_products = filter_wanted_products(new_products, include_words)
+            wishlist_products = filter_wanted_products(new_products, INCLUDE_LIST)
 
             if wishlist_products:
-                send_email(wishlist_emails, wishlist_products)
+                send_email(EMAIL_RECIPENTS_WISHLIST, wishlist_products)
 
             return new_products
         else:
