@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 import azure.functions as func
 from email_utils import send_email
 from csv_utils import load_prev_list, save_list_to_csv
+from misc_utils import dicts_equal, filter_unwanted_products, filter_wanted_products, generate_url_list
 
 
 app = func.FunctionApp()
@@ -14,10 +15,12 @@ load_dotenv(find_dotenv())
 logging.basicConfig(level=logging.INFO)
 
 URL = os.environ.get("URL")
+receiver_emails = os.environ.get("EMAIL_RECIPENTS_GENERAL").split(",")
+wishlist_emails = os.environ.get("EMAIL_RECIPENTS_WISHLIST").split(",")
 
 
 @app.schedule(
-    schedule="0 */45 * * * *",
+    schedule="0 */30 * * * *",
     arg_name="myTimer",
     run_on_startup=True,
     use_monitor=False,
@@ -32,13 +35,6 @@ def func_scraper_timer_trigger(myTimer: func.TimerRequest) -> None:
         main()
     except Exception as e:
         logging.error("An error occurred while running the scraper: %s", e)
-
-
-def generate_url_list(base_url, url_range):
-    url_list = [base_url]
-    for i in range(1, url_range + 1):
-        url_list.append(f"{base_url},{i}.html")
-    return url_list
 
 
 def request_content(url):
@@ -58,7 +54,9 @@ def extract_product_info(content):
         price_1 = item.find("span", class_="price_1")
         price_2 = item.find("span", class_="price_2")
 
-        name_title = name_a.get("title", "N/A").strip().replace(",", " ") if name_a else "N/A"
+        name_title = (
+            name_a.get("title", "N/A").strip().replace(",", " ") if name_a else "N/A"
+        )
         name_href = name_a.get("href", "N/A") if name_a else "N/A"
         price_1_text = price_1.get_text(strip=True) if price_1 else "N/A"
         price_2_text = price_2.get_text(strip=True) if price_2 else "N/A"
@@ -68,18 +66,6 @@ def extract_product_info(content):
         product_list.append(product)
 
     return product_list
-
-
-def dicts_equal(dict1, dict2):
-    return all(dict1[key] == dict2[key] for key in dict1)
-
-
-def filter_new_products(products_unfiltered, exclude_words):
-    filtered_products = []
-    for product in products_unfiltered:
-        if not any(word in product["name"].lower() for word in exclude_words):
-            filtered_products.append(product)
-    return filtered_products
 
 
 def scrape_and_compare(prev_list):
@@ -100,11 +86,18 @@ def scrape_and_compare(prev_list):
             if not any(dicts_equal(item, prev_item) for prev_item in prev_list)
         ]
         exclude_words = os.environ.get("EXCLUDE_LIST").split(",")
-        new_products = filter_new_products(new_products_unfiltered, exclude_words)
+        new_products = filter_unwanted_products(new_products_unfiltered, exclude_words)
 
         if new_products:
-            send_email(new_products)
+            send_email(receiver_emails, new_products)
             save_list_to_csv(combined_product_list)
+
+            include_words = os.environ.get("INCLUDE_LIST").split(",")
+            wishlist_products = filter_wanted_products(new_products, include_words)
+
+            if wishlist_products:
+                send_email(wishlist_emails, wishlist_products)
+
             return new_products
         else:
             logging.info("Nothing new.")

@@ -29,18 +29,17 @@ def generate_email_content(items):
                 {list_items_html}
             </ul>
             <br>
-            <p>Email sent from Web Scraper App by saradonin</p>
+            <p>Email sent from Azure Function Web Scraper by saradonin</p>
         </body>
     </html>
     """
     return html_content
 
 
-def send_email(list):
+def send_email(receiver_emails, list):
 
     sender_email = os.environ.get("EMAIL_LOGIN")
     sender_password = os.environ.get("EMAIL_PASSWORD")
-    receiver_emails = os.environ.get("EMAIL_RECIPENTS").split(",")
 
     html_content = generate_email_content(list)
 

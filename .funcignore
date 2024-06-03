@@ -1,5 +1,6 @@
 .git*
 .vscode
+.env
 __azurite_db*__.json
 __blobstorage__
 __queuestorage__
