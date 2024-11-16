@@ -15,13 +15,17 @@ SENDER_EMAIL = os.environ.get("EMAIL_LOGIN")
 SENDER_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 
 
-def generate_email_content(items):
+def generate_email_content(new_items,all_items):
     """
     Generate HTML content for the email.
     """
-    list_items_html = "".join(
+    list_new_items_html = "".join(
         f'<li>{item["name"]} - {item["price"]} - <a href="{item["link"]}">LINK</a></li>'
-        for item in items
+        for item in new_items
+    )
+    list_all_items_html = "".join(
+        f'<li>{item["name"]} - {item["price"]} - <a href="{item["link"]}">LINK</a></li>'
+        for item in all_items
     )
 
     html_content = f"""
@@ -33,21 +37,26 @@ def generate_email_content(items):
         <body>
             <h1>New items available:</h1>
             <ul>
-                {list_items_html}
+                {list_new_items_html}
             </ul>
             <br>
-            <p>Email sent from Azure Function Web Scraper by saradonin</p>
+            <h1>All items available in presale:</h1>
+            <ul>
+                {list_all_items_html}
+            </ul>
+            <br>
+            <p>Email sent from Azure Web Scraper by saradonin</p>
         </body>
     </html>
     """
     return html_content
 
 
-def send_email(receiver_emails, list):
+def send_email(receiver_emails, new_items, all_items):
     """
     Send an email with the list of items to the specified receivers.
     """
-    html_content = generate_email_content(list)
+    html_content = generate_email_content(new_items, all_items)
 
     try:
         with smtplib.SMTP_SSL("smtp.googlemail.com", 465) as server:

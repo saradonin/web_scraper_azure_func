@@ -28,7 +28,7 @@ INCLUDE_LIST = os.environ.get("INCLUDE_LIST").split(",")
 
 
 @app.schedule(
-    schedule="0 */15 * * * *",
+    schedule="0 */30 * * * *",
     arg_name="myTimer",
     run_on_startup=True,
     use_monitor=False,
@@ -104,7 +104,7 @@ def scrape_and_compare(prev_list):
         new_products_filtered = filter_unwanted_products(new_products, EXCLUDE_LIST)
 
         if new_products_filtered:
-            send_email(EMAIL_RECIPENTS_GENERAL, new_products_filtered)
+            send_email(EMAIL_RECIPENTS_GENERAL, new_products_filtered, combined_product_list)
             save_list_to_csv(combined_product_list)
 
             wishlist_products = filter_wanted_products(
