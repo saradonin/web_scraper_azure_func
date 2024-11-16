@@ -15,18 +15,22 @@ SENDER_EMAIL = os.environ.get("EMAIL_LOGIN")
 SENDER_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 
 
-def generate_email_content(new_items,all_items):
+def generate_items_html(items):
+    """
+    Generate an HTML string for a list of items.
+    """
+    return "".join(
+        f'<li>{item["name"]} - {item["price"]} - <a href="{item["link"]}">LINK</a></li>'
+        for item in items
+    )
+
+
+def generate_email_content(new_items, all_items):
     """
     Generate HTML content for the email.
     """
-    list_new_items_html = "".join(
-        f'<li>{item["name"]} - {item["price"]} - <a href="{item["link"]}">LINK</a></li>'
-        for item in new_items
-    )
-    list_all_items_html = "".join(
-        f'<li>{item["name"]} - {item["price"]} - <a href="{item["link"]}">LINK</a></li>'
-        for item in all_items
-    )
+    list_new_items_html = generate_items_html(new_items)
+    list_all_items_html = generate_items_html(all_items)
 
     html_content = f"""
     <!DOCTYPE html>
