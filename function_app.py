@@ -100,21 +100,22 @@ def scrape_and_compare(prev_list):
 
         logging.info("Scraped successfully!")
 
-        new_products = filter_new_products(combined_product_list, prev_list)
-        new_products_filtered = filter_unwanted_products(new_products, EXCLUDE_LIST)
+        products_filtered = filter_unwanted_products(
+            combined_product_list, EXCLUDE_LIST
+        )
+        sorted_product_list = sorted(products_filtered, key=lambda x: x["name"])
+        new_products = filter_new_products(products_filtered, prev_list)
 
-        if new_products_filtered:
-            send_email(EMAIL_RECIPENTS_GENERAL, new_products_filtered, combined_product_list)
+        if new_products:
+            send_email(EMAIL_RECIPENTS_GENERAL, new_products, sorted_product_list)
             save_list_to_csv(combined_product_list)
 
-            wishlist_products = filter_wanted_products(
-                new_products_filtered, INCLUDE_LIST
-            )
+            wishlist_products = filter_wanted_products(new_products, INCLUDE_LIST)
 
             if wishlist_products:
-                send_email(EMAIL_RECIPENTS_WISHLIST, wishlist_products)
+                send_email(EMAIL_RECIPENTS_WISHLIST, wishlist_products, sorted_product_list)
 
-            return new_products_filtered
+            return new_products
         else:
             logging.info("Nothing new.")
 
