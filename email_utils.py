@@ -37,20 +37,14 @@ def generate_email_content(new_items, all_items):
     <html>
         <head>
             <title>New items in stock!</title>
-            <style>
-                h1, h2 {
-                    font-weight: bold;
-                    color: navy;
-                }
-            </style>
         </head>
         <body>
-            <h1>New items available:</h1>
+            <h1><strong>New items available:</strong></h1>
             <ul>
                 {list_new_items_html}
             </ul>
             <br>
-            <h2>All items available in presale:</h2>
+            <h2><b>All items available in presale:</b></h2>
             <ul>
                 {list_all_items_html}
             </ul>
