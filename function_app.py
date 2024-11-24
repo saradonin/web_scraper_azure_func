@@ -29,7 +29,7 @@ INCLUDE_LIST = os.environ.get("INCLUDE_LIST").split(",")
 
 
 @app.schedule(
-    schedule="0 */20 * * * *",
+    schedule="0 */30 * * * *",
     arg_name="myTimer",
     run_on_startup=True,
     use_monitor=False,
