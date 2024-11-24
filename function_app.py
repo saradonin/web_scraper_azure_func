@@ -12,6 +12,7 @@ from misc_utils import (
     filter_unwanted_products,
     filter_wanted_products,
     generate_url_list,
+    shorten_text
 )
 
 
@@ -71,7 +72,7 @@ def extract_product_info(content):
         price_1 = item.find("span", class_="price_1")
         price_2 = item.find("span", class_="price_2")
 
-        name_title = (
+        name_title = shorten_text(
             name_a.get("title", "N/A").strip().replace(",", " ") if name_a else "N/A"
         )
         name_href = name_a.get("href", "N/A") if name_a else "N/A"

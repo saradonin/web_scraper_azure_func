@@ -1,3 +1,6 @@
+import re
+
+
 def dicts_equal(dict1, dict2):
     """
     Check if all key-value pairs in dict1 are equal to those in dict2.
@@ -49,3 +52,23 @@ def generate_url_list(base_url, url_range):
     for i in range(1, url_range + 1):
         url_list.append(f"{base_url},{i}.html")
     return url_list
+
+
+def shorten_text(text):
+    """
+    Shorten text in a case-insensitive manner.
+    """
+    replacements = {
+        r"woda kolońska": "edc",
+        r"woda toaletowa": "edt",
+        r"woda perfumowana": "edp",
+        r"Extrait de Parfum": "ext",
+        r"dla kobiet": "",
+        r"dla mężczyzn": "",
+        r"perfumy": "",
+    }
+
+    for pattern, replacement in replacements.items():
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+
+    return text
